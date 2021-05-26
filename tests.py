@@ -2,6 +2,7 @@ import pandas
 import plotly.express as px
 import numpy as np
 import plotly.graph_objects as go
+import copy
 
 data = pandas.read_csv('athlete_data.csv')
 
@@ -87,28 +88,24 @@ grade_map = {
     42: 'Red-shirt'
 }
 
-print(data[["Sport", "Fall", "Spring"]].groupby(
-    "Sport").mean().sort_values(by=["Fall", "Spring"]))
-print(data[["Grade", "Fall", "Spring"]].groupby(
-    "Grade").mean().sort_values(by=["Fall", "Spring"]))
-print(data[["Gender", "Fall", "Spring"]].groupby(
-    "Gender").mean().sort_values(by=["Fall", "Spring"]))
 
 season_columns = list(data.columns)
 season_columns.append('Season')
 
-season_data = pandas.DataFrame(columns=season_columns, dtype=float)
-
-
-print(season_data)
-
+rows = []
 
 for index, row in data.iterrows():
     for season in season_map[row['Sport']]:
-        row['Season'] = season
-        season_data.loc[len(season_data)] = list(row)
 
-print(season_data[["Season", "Fall", "Spring"]])
+        copyrow = copy.deepcopy(row)
 
-print(1 - season_data[["Season", "Fall", "Spring"]].groupby(
-    "Season").mean().sort_values(by=["Fall", "Spring"]))
+        copyrow['Season'] = season
+        rows.append(copyrow)
+
+season_data = pandas.DataFrame(rows, columns=season_columns, dtype=float)
+
+
+print(season_data[["Season", "Fall", "Spring"]].groupby(
+    "Season").sum().sort_values(by=["Fall", "Spring"]))
+print(season_data[["Season", "Fall", "Spring"]].groupby(
+    "Season").count().sort_values(by=["Fall", "Spring"]))
