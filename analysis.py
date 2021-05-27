@@ -43,7 +43,7 @@ sport_gender = {"mens-basketball": "Men's Sport",
                 "womens-ice-hockey": "Women's Sport"}
 
 gradeMap = {
-    1: "First-year",
+    1: "Freshman",
     2: "Sophomore",
     3: "Junior",
     42: 'Red-shirt'
@@ -55,9 +55,6 @@ data['Grade'] = data.apply(lambda row: gradeMap[row.Grade], axis=1)
 data['Sport'] = data.apply(
     lambda row: row.Sport.replace("-", " ").title().replace("mens", "men's").replace("Mens", "Men's"), axis=1)
 data['total'] = 1
-
-print(data)
-
 
 fallGradeCount = data[["Grade", "Sport", "SportGender", "Fall"]
                       ].groupby(["Grade", "Sport", "SportGender"]).sum().reset_index()
@@ -106,40 +103,46 @@ fallCount = data[["Grade", "Sport", "SportGender", "Fall"]].sum()
 springTotal = data[["Grade", "Sport", "SportGender", "Spring"]].count()
 springCount = data[["Grade", "Sport", "SportGender", "Spring"]].sum()
 
-columns = ["Name", "Parent", "Count", "Total", "Color"]
+columns = ["Name", "Parent", "Count", "Total", "Color", "ID"]
 root = 'Student Athletes'
 
 
 dfFall = pandas.DataFrame(columns=columns, dtype=float)
 dfFall.loc[len(dfFall.index)] = [root, None,
-                                 fallCount['Fall'], fallTotal['Fall'], 0]
+                                 fallCount['Fall'], fallTotal['Fall'], 0, root]
 
 for index, row in fallGradeCount.iterrows():
-    copyrow = [row['Grade'], row['Sport'], row['Fall'], row['Total'], 0]
+    copyrow = [row['Grade'], row['Sport'] + row['SportGender'], row['Fall'], row['Total'],
+               0, row['Grade'] + row['Sport'] + row['SportGender']]
     dfFall.loc[len(dfFall.index)] = copyrow
 for index, row in fallSportCount.iterrows():
-    copyrow = [row['Sport'], row['SportGender'], row['Fall'], row['Total'], 0]
+    copyrow = [row['Sport'], row['SportGender'], row['Fall'],
+               row['Total'], 0, row['Sport'] + row['SportGender']]
     dfFall.loc[len(dfFall.index)] = copyrow
 for index, row in fallGenderCount.iterrows():
-    copyrow = [row['SportGender'], root, row['Fall'], row['Total'], 0]
+    copyrow = [row['SportGender'], root, row['Fall'], row['Total'],
+               0, row['SportGender']]
     dfFall.loc[len(dfFall.index)] = copyrow
 dfFall["Color"] = dfFall.apply(lambda row: row['Count']/row['Total'], axis=1)
 
 dfFall = dfFall.loc[dfFall['Count'] != 0]
 
+
 dfSpring = pandas.DataFrame(columns=columns, dtype=float)
 dfSpring.loc[len(dfSpring.index)] = [root, None,
-                                     springCount['Spring'], springTotal['Spring'], 0]
+                                     springCount['Spring'], springTotal['Spring'], 0, root]
 
 for index, row in springGradeCount.iterrows():
-    copyrow = [row['Grade'], row['Sport'], row['Spring'], row['Total'], 0]
+    copyrow = [row['Grade'], row['Sport'] + row['SportGender'], row['Spring'], row['Total'],
+               0, row['Grade'] + row['Sport'] + row['SportGender']]
     dfSpring.loc[len(dfSpring.index)] = copyrow
 for index, row in springSportCount.iterrows():
     copyrow = [row['Sport'], row['SportGender'],
-               row['Spring'], row['Total'], 0]
+               row['Spring'], row['Total'], 0, row['Sport'] + row['SportGender']]
     dfSpring.loc[len(dfSpring.index)] = copyrow
 for index, row in springGenderCount.iterrows():
-    copyrow = [row['SportGender'], root, row['Spring'], row['Total'], 0]
+    copyrow = [row['SportGender'], root, row['Spring'], row['Total'],
+               0, row['SportGender']]
     dfSpring.loc[len(dfSpring.index)] = copyrow
 dfSpring["Color"] = dfSpring.apply(
     lambda row: row['Count']/row['Total'], axis=1)
@@ -150,6 +153,7 @@ fallTrace = px.treemap(
     dfFall,
     names='Name',
     parents='Parent',
+    ids='ID',
     values='Count',
     color='Color',
     custom_data=['Count', 'Total', 'Color', 'Name'],
@@ -160,14 +164,17 @@ fallTrace = px.treemap(
         colorscale='RdBu'
     )
 ).update_traces(
+    branchvalues='total',
     visible=True,
     hovertemplate='%{customdata[3]}<br>%{customdata[0]}/%{customdata[1]} athletes on leave - %{customdata[2]:.2%}'
 ).data[0]
+
 
 springTrace = px.treemap(
     dfSpring,
     names='Name',
     parents='Parent',
+    ids='ID',
     values='Count',
     color='Color',
     custom_data=['Count', 'Total', 'Color', 'Name'],
@@ -178,6 +185,7 @@ springTrace = px.treemap(
         colorscale='RdBu'
     )
 ).update_traces(
+    branchvalues='total',
     visible=False,
     hovertemplate='%{customdata[3]}<br>%{customdata[0]}/%{customdata[1]} athletes on leave - %{customdata[2]:.2%}'
 ).data[0]
@@ -210,77 +218,4 @@ fig.update_layout(coloraxis=dict(cmid=0.5, colorbar=dict(tickformat='%',
 
 fig.show()
 
-
-"""                         
-
-springPercent = data[["Grade", "Sport", "SportGender", "Spring"]
-                     ].groupby(["Grade", "Sport", "SportGender"]).mean().reset_index()
-fallPercent = data[["Grade", "Sport", "SportGender", "Fall"]
-                   ].groupby(["Grade", "Sport", "SportGender"]).mean().reset_index()
-total = data[["Grade", "Sport", "SportGender", "total"]
-             ].groupby(["Grade", "Sport", "SportGender"]).sum().reset_index()
-
-
-df = fallCount
-df["Student Athletes"] = "Student Athletes"
-df["fallCount"] = df["Fall"]
-df["fallPercent"] = fallPercent["Fall"]
-df["springCount"] = springCount["Spring"]
-df["springPercent"] = springPercent["Spring"]
-df['Total'] = total['total']
-
-filteredFall = df.loc[df['fallCount'] != 0]
-average_gapped_fall = filteredFall['fallPercent'].mean()
-
-filteredSpring = df.loc[df['springCount'] != 0]
-average_gapped_spring = filteredSpring['springPercent'].mean()
-
-
-fallTrace = px.treemap(filteredFall,
-                       path=['Student Athletes',
-                             'SportGender', 'Sport', 'Grade'],
-                       values='fallCount',
-                       color='fallPercent',
-                       color_continuous_midpoint=average_gapped_fall,
-                       custom_data=['fallCount', 'fallPercent', 'Total'],
-                       ).update_layout(coloraxis=dict(cmid=average_gapped_fall, colorbar=dict(tickformat='%', title=dict(text='Percent on leave')), colorscale='RdBu')).update_traces(visible=True, hovertemplate='%{id}<br>%{customdata[0]} athletes on leave - %{customdata[1]:.2%}').data[0]
-
-springTrace = px.treemap(filteredSpring,
-                         path=['Student Athletes',
-                               'SportGender', 'Sport', 'Grade'],
-                         values='springCount',
-                         color='springPercent',
-                         custom_data=['springCount', 'springPercent', 'Total'],
-                         color_continuous_midpoint=average_gapped_spring).update_layout(coloraxis=dict(cmid=average_gapped_fall, colorbar=dict(tickformat='%', title=dict(text='Percent on leave')), colorscale='RdBu')).update_traces(visible=False, hovertemplate='%{id}<br>%{customdata[0]} athletes on leave - %{customdata[1]:.2%}').data[0]
-
-updatemenus = [{'active': 0, "buttons": [
-    dict(label="Fall",
-         method="update",
-         args=[{"visible": [True, False]},
-
-               ]),
-    dict(label="Spring",
-         method="update",
-         args=[{"visible": [False, True]},
-               ])
-]}]
-
-fig = go.Figure(data=[fallTrace, springTrace],
-                layout_title_text="Student-athletes on leave by gender, sport, and year.",
-                layout_annotations=[dict(
-                    x=-0.072,
-                    y=1.073,
-                    showarrow=False,
-                    xref="paper", yref="paper",
-                    text='This graph is interactive. Hover to see exact figures or click to expand a specific box.')],
-                layout=dict(updatemenus=updatemenus))
-
-fig.update_layout(coloraxis=dict(cmid=0.5, colorbar=dict(tickformat='%',
-                                                         title=dict(text='Percent on leave')), colorscale='RdBu_r'))
-
-fig.write_html("by_gender.html")
-
-
-# fig.show()
-
-"""
+# fig.write_html("by_gender_2.html")
