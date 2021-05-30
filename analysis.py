@@ -216,6 +216,6 @@ fig = go.Figure(data=[fallTrace, springTrace],
 fig.update_layout(coloraxis=dict(cmid=0.5, colorbar=dict(tickformat='%',
                                                          title=dict(text='Percent on leave')), colorscale='RdBu_r'))
 
-fig.show()
+# fig.show()
 
-# fig.write_html("by_gender_2.html")
+fig.write_html("by_gender_3.html")

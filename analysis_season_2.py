@@ -134,19 +134,21 @@ fallCount = data[["Grade", "Sport", "Season", "Fall"]].sum()
 springTotal = data[["Grade", "Sport", "Season", "Spring"]].count()
 springCount = data[["Grade", "Sport", "Season", "Spring"]].sum()
 
-columns = ["Name", "Parent", "Count", "Total", "Color"]
+columns = ["Name", "Parent", "Count", "Total", "Color", "ID"]
 root = 'Student Athletes'
 
 
 dfFall = pandas.DataFrame(columns=columns, dtype=float)
 dfFall.loc[len(dfFall.index)] = [root, None,
-                                 fallCount['Fall'], fallTotal['Fall'], 0]
+                                 fallCount['Fall'], fallTotal['Fall'], 0, root]
 
 for index, row in fallSportCount.iterrows():
-    copyrow = [row['Sport'], row['Season'], row['Fall'], row['Total'], 0]
+    copyrow = [row['Sport'], row['Season'], row['Fall'],
+               row['Total'], 0, row['Sport'] + row['Season']]
     dfFall.loc[len(dfFall.index)] = copyrow
 for index, row in fallSeasonCount.iterrows():
-    copyrow = [row['Season'], root, row['Fall'], row['Total'], 0]
+    copyrow = [row['Season'], root, row['Fall'],
+               row['Total'], 0, row['Season']]
     dfFall.loc[len(dfFall.index)] = copyrow
 dfFall["Color"] = dfFall.apply(lambda row: row['Count']/row['Total'], axis=1)
 
@@ -154,15 +156,16 @@ dfFall = dfFall.loc[dfFall['Count'] != 0]
 
 dfSpring = pandas.DataFrame(columns=columns, dtype=float)
 dfSpring.loc[len(dfSpring.index)] = [root, None,
-                                     springCount['Spring'], springTotal['Spring'], 0]
+                                     springCount['Spring'], springTotal['Spring'], 0, root]
 
 
 for index, row in springSportCount.iterrows():
     copyrow = [row['Sport'], row['Season'],
-               row['Spring'], row['Total'], 0]
+               row['Spring'], row['Total'], 0, row['Sport'] + row['Season']]
     dfSpring.loc[len(dfSpring.index)] = copyrow
 for index, row in springSeasonCount.iterrows():
-    copyrow = [row['Season'], root, row['Spring'], row['Total'], 0]
+    copyrow = [row['Season'], root, row['Spring'],
+               row['Total'], 0, row['Season']]
     dfSpring.loc[len(dfSpring.index)] = copyrow
 dfSpring["Color"] = dfSpring.apply(
     lambda row: row['Count']/row['Total'], axis=1)
@@ -173,6 +176,7 @@ fallTrace = px.treemap(
     dfFall,
     names='Name',
     parents='Parent',
+    ids='ID',
     values='Count',
     color='Color',
     custom_data=['Count', 'Total', 'Color', 'Name'],
@@ -183,6 +187,7 @@ fallTrace = px.treemap(
         colorscale='RdBu'
     )
 ).update_traces(
+    branchvalues='total',
     visible=True,
     hovertemplate='%{customdata[3]}<br>%{customdata[0]}/%{customdata[1]} athletes on leave - %{customdata[2]:.2%}'
 ).data[0]
@@ -191,6 +196,7 @@ springTrace = px.treemap(
     dfSpring,
     names='Name',
     parents='Parent',
+    ids='ID',
     values='Count',
     color='Color',
     custom_data=['Count', 'Total', 'Color', 'Name'],
@@ -201,6 +207,7 @@ springTrace = px.treemap(
         colorscale='RdBu'
     )
 ).update_traces(
+    branchvalues='total',
     visible=False,
     hovertemplate='%{customdata[3]}<br>%{customdata[0]}/%{customdata[1]} athletes on leave - %{customdata[2]:.2%}'
 ).data[0]
@@ -233,4 +240,4 @@ fig.update_layout(coloraxis=dict(cmid=0.5, colorbar=dict(tickformat='%',
 
 # fig.show()
 
-fig.write_html("by_season_2.html")
+fig.write_html("by_season_3.html")
